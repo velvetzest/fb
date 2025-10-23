@@ -1,0 +1,922 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Flavor Finder - Pair Finder</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        h1 {
+            color: #2c3e50;
+            text-align: center;
+        }
+        .container {
+            display: flex;
+            gap: 20px;
+        }
+        .input-section {
+            flex: 1;
+        }
+        .results-section {
+            flex: 2;
+            border: 1px solid #ddd;
+            padding: 20px;
+            min-height: 500px;
+            border-radius: 5px;
+        }
+        input[type="text"] {
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        button {
+            background-color: #3498db;
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 5px 0;
+            width: 100%;
+        }
+        button:hover {
+            background-color: #2980b9;
+        }
+        .suggestion-button {
+            background-color: #95a5a6;
+            font-size: 12px;
+            padding: 5px 10px;
+            margin: 2px;
+            width: auto;
+            display: inline-block;
+        }
+        .suggestion-button:hover {
+            background-color: #7f8c8d;
+        }
+        .combination {
+            border: 1px solid #e0e0e0;
+            margin: 10px 0;
+            padding: 15px;
+            border-radius: 5px;
+            background-color: #f9f9f9;
+        }
+        .combination-header {
+            font-weight: bold;
+            color: #2c3e50;
+            margin-bottom: 8px;
+        }
+        .combination-size {
+            font-size: 12px;
+            color: #7f8c8d;
+            margin-bottom: 5px;
+        }
+        .loading {
+            text-align: center;
+            font-style: italic;
+            color: #7f8c8d;
+        }
+        .error {
+            color: #e74c3c;
+            background-color: #fdf2f2;
+            padding: 10px;
+            border-radius: 5px;
+        }
+        .controls {
+            margin-bottom: 20px;
+        }
+        label {
+            display: block;
+            margin-top: 10px;
+            font-weight: bold;
+        }
+        select {
+            width: 100%;
+            padding: 5px;
+        }
+        .input-container {
+            position: relative;
+            margin-bottom: 10px;
+        }
+        .autocomplete-suggestions {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            background: white;
+            border: 1px solid #ddd;
+            border-top: none;
+            border-radius: 0 0 5px 5px;
+            max-height: 200px;
+            overflow-y: auto;
+            z-index: 1000;
+            display: none;
+        }
+        .suggestion-item {
+            padding: 8px 12px;
+            cursor: pointer;
+            border-bottom: 1px solid #f0f0f0;
+        }
+        .suggestion-item:hover {
+            background-color: #f5f5f5;
+        }
+        .suggestion-item:last-child {
+            border-bottom: none;
+        }
+        .suggestions {
+            margin-top: 15px;
+        }
+        .suggestion-title {
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+        .tags-container {
+            margin: 10px 0;
+            min-height: 30px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            padding: 5px;
+            background-color: #f9f9f9;
+        }
+        .tag {
+            display: inline-block;
+            background-color: #3498db;
+            color: white;
+            padding: 5px 10px;
+            margin: 2px;
+            border-radius: 3px;
+            font-size: 14px;
+        }
+        .tag span {
+            margin-left: 8px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+        .tag span:hover {
+            color: #ffcccc;
+        }
+        .add-button {
+            background-color: #27ae60;
+            width: auto;
+            display: inline-block;
+            margin-left: 10px;
+            padding: 8px 15px;
+        }
+        .add-button:hover {
+            background-color: #229954;
+        }
+        .input-row {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .password-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.8);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+        }
+        .password-dialog {
+            background: white;
+            padding: 40px;
+            border-radius: 10px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+            text-align: center;
+            max-width: 400px;
+            width: 90%;
+        }
+        .password-dialog h2 {
+            margin-bottom: 20px;
+            color: #2c3e50;
+        }
+        .password-dialog input {
+            width: 100%;
+            padding: 12px;
+            margin: 10px 0 20px 0;
+            border: 2px solid #ddd;
+            border-radius: 5px;
+            font-size: 16px;
+        }
+        .password-dialog button {
+            background-color: #3498db;
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        .password-dialog button:hover {
+            background-color: #2980b9;
+        }
+        .password-error {
+            color: #e74c3c;
+            margin-top: 10px;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+    <!-- Password Protection Overlay -->
+    <div class="password-overlay" id="passwordOverlay">
+        <div class="password-dialog">
+            <h2>Access Required</h2>
+            <p>Please enter the password to access Flavor Finder:</p>
+            <input type="password" id="passwordInput" placeholder="Enter password..." />
+            <br>
+            <button onclick="checkPassword()">Enter</button>
+            <div class="password-error" id="passwordError"></div>
+        </div>
+    </div>
+
+    <h1>Flavor Finder - Pair Finder</h1>
+    
+    <div class="container">
+        <div class="input-section">
+            <h2>Find Compatible Combinations</h2>
+            <p>Add one or more base flavors to find all possible flavor combinations where every ingredient is compatible with every other ingredient.</p>
+            
+            <div class="controls">
+                <label for="baseFlavorInput">Add Base Flavors:</label>
+                <div class="input-row">
+                    <div class="input-container" style="flex: 1;">
+                        <input type="text" id="baseFlavorInput" placeholder="e.g., pears, chocolate, garlic..." autocomplete="off" />
+                        <div class="autocomplete-suggestions" id="autocompleteSuggestions"></div>
+                    </div>
+                    <button class="add-button" id="addIngredientButton">Add</button>
+                </div>
+                
+                <div class="tags-container" id="selectedIngredients">
+                    <em style="color: #7f8c8d;">No base flavors selected. Add flavors above.</em>
+                </div>
+                
+                <label for="minCombinationSize">Min Combination Size:</label>
+                <select id="minCombinationSize">
+                    <option value="2" selected>2 flavors</option>
+                    <option value="3">3 flavors</option>
+                    <option value="4">4 flavors</option>
+                    <option value="5">5 flavors</option>
+                </select>
+                
+                <label for="maxCombinationSize">Max Combination Size:</label>
+                <select id="maxCombinationSize">
+                    <option value="3">3 flavors</option>
+                    <option value="4" selected>4 flavors</option>
+                    <option value="5">5 flavors</option>
+                    <option value="6">6 flavors</option>
+                    <option value="7">7 flavors</option>
+                    <option value="8">8 flavors</option>
+                    <option value="9">9 flavors</option>
+                    <option value="10">10 flavors</option>
+                </select>
+                
+                <label for="resultLimit">Max Results:</label>
+                <select id="resultLimit">
+                    <option value="20">20 combinations</option>
+                    <option value="50" selected>50 combinations</option>
+                    <option value="100">100 combinations</option>
+                    <option value="200">200 combinations</option>
+                </select>
+                
+                <label style="margin-top: 15px;">
+                    <input type="checkbox" id="bidirectionalMode" checked> 
+                    <strong>Bidirectional Compatibility</strong>
+                </label>
+                <p style="font-size: 12px; color: #666; margin: 5px 0 15px 0;">
+                    ✓ <strong>Checked:</strong> Strict mutual compatibility (A→B AND B→A)<br>
+                    ✗ <strong>Unchecked:</strong> Asymmetric compatibility (A→B OR B→A)
+                </p>
+                
+                <button id="findCombinations">Find Compatible Combinations</button>
+            </div>
+            
+            <div class="suggestions">
+                <div class="suggestion-title">Popular Base Flavors:</div>
+                <button class="suggestion-button" onclick="setBaseFlavor('chocolate')">chocolate</button>
+                <button class="suggestion-button" onclick="setBaseFlavor('garlic')">garlic</button>
+                <button class="suggestion-button" onclick="setBaseFlavor('lemon')">lemon</button>
+                <button class="suggestion-button" onclick="setBaseFlavor('onions')">onions</button>
+                <button class="suggestion-button" onclick="setBaseFlavor('tomatoes')">tomatoes</button>
+                <button class="suggestion-button" onclick="setBaseFlavor('basil')">basil</button>
+                <button class="suggestion-button" onclick="setBaseFlavor('cheese')">cheese</button>
+                <button class="suggestion-button" onclick="setBaseFlavor('apples')">apples</button>
+            </div>
+        </div>
+        
+        <div class="results-section">
+            <h2>Compatible Flavor Combinations</h2>
+            <p>Results will show combinations where ALL ingredients are compatible with ALL other ingredients in the group.</p>
+            <div id="combinationResults">
+                <div class="loading">Enter a base flavor and click "Find Compatible Combinations" to see results...</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Password Protection
+        const CORRECT_PASSWORD = '122oceanpark'; // Change this to your desired password
+        const COOKIE_NAME = 'flavor_finder_auth';
+        const COOKIE_DAYS = 365;
+
+        // Check if user is already authenticated
+        function checkAuthCookie() {
+            const cookies = document.cookie.split(';');
+            for (let cookie of cookies) {
+                const [name, value] = cookie.trim().split('=');
+                if (name === COOKIE_NAME && value === 'authenticated') {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        // Set authentication cookie
+        function setAuthCookie() {
+            const expiry = new Date();
+            expiry.setTime(expiry.getTime() + (COOKIE_DAYS * 24 * 60 * 60 * 1000));
+            document.cookie = `${COOKIE_NAME}=authenticated; expires=${expiry.toUTCString()}; path=/`;
+        }
+
+        // Check password function
+        function checkPassword() {
+            const input = document.getElementById('passwordInput');
+            const error = document.getElementById('passwordError');
+            
+            if (input.value === CORRECT_PASSWORD) {
+                setAuthCookie();
+                document.getElementById('passwordOverlay').style.display = 'none';
+                error.textContent = '';
+                initApp(); // Start the app
+            } else {
+                error.textContent = 'Incorrect password. Please try again.';
+                input.value = '';
+                input.focus();
+            }
+        }
+
+        // Initialize password protection
+        function initPasswordProtection() {
+            if (checkAuthCookie()) {
+                document.getElementById('passwordOverlay').style.display = 'none';
+                initApp();
+            } else {
+                document.getElementById('passwordOverlay').style.display = 'flex';
+                document.getElementById('passwordInput').focus();
+                
+                // Allow Enter key to submit password
+                document.getElementById('passwordInput').addEventListener('keypress', function(e) {
+                    if (e.key === 'Enter') {
+                        checkPassword();
+                    }
+                });
+            }
+        }
+
+        // Global variables
+        let flavorMapping = {};
+        let bidirectionalMapping = {};
+        let allFlavors = new Set();
+        let sortedFlavors = [];
+        let selectedIngredients = [];
+        const suggestionsContainer = document.getElementById('autocompleteSuggestions');
+        const selectedIngredientsContainer = document.getElementById('selectedIngredients');
+        
+        // Load data
+        async function loadData() {
+            try {
+                const response = await fetch('app/flavor-finder/flavor_finder_full.csv');
+                if (!response.ok) {
+                    throw new Error(`Failed to fetch data: ${response.status}`);
+                }
+                
+                const csvText = await response.text();
+                processCSV(csvText);
+            } catch (error) {
+                console.error('Error loading data:', error);
+                document.getElementById('combinationResults').innerHTML = 
+                    `<div class="error">Error loading data: ${error.message}</div>`;
+            }
+        }
+        
+        // Process CSV data
+        function processCSV(csv) {
+            const lines = csv.split('\n');
+            
+            // Build both asymmetric and bidirectional flavor mappings
+            for (let i = 1; i < lines.length; i++) {
+                if (!lines[i].trim()) continue;
+                
+                // Parse CSV line - handle quotes properly
+                const parts = lines[i].match(/(".*?"|[^",\s]+)(?=\s*,|\s*$)/g);
+                if (!parts || parts.length < 2) continue;
+                
+                const mainFlavor = parts[0].replace(/"/g, '').trim().toLowerCase();
+                const pairing = parts[1].replace(/"/g, '').trim().toLowerCase();
+                
+                // Skip entries that are season, taste, volume, or weight descriptors
+                if (pairing.startsWith('season:') || pairing.startsWith('taste:') || 
+                    pairing.startsWith('volume:') || pairing.startsWith('weight:')) {
+                    continue;
+                }
+                
+                if (mainFlavor && pairing) {
+                    allFlavors.add(mainFlavor);
+                    allFlavors.add(pairing);
+                    
+                    // Asymmetric mapping (only explicit relationships from CSV)
+                    if (!flavorMapping[mainFlavor]) {
+                        flavorMapping[mainFlavor] = new Set();
+                    }
+                    flavorMapping[mainFlavor].add(pairing);
+                }
+            }
+            
+            // Create bidirectional mapping (for strict mutual compatibility)
+            for (const flavor of allFlavors) {
+                bidirectionalMapping[flavor] = new Set();
+            }
+            
+            // Only add bidirectional relationships where BOTH directions exist in the data
+            for (const [mainFlavor, pairings] of Object.entries(flavorMapping)) {
+                for (const pairing of pairings) {
+                    // Check if the reverse relationship also exists
+                    if (flavorMapping[pairing] && flavorMapping[pairing].has(mainFlavor)) {
+                        bidirectionalMapping[mainFlavor].add(pairing);
+                        bidirectionalMapping[pairing].add(mainFlavor);
+                    }
+                }
+            }
+            
+            // Create sorted array for autocomplete
+            sortedFlavors = Array.from(allFlavors).sort();
+            
+            console.log(`Loaded ${allFlavors.size} unique flavors with pairings`);
+            console.log(`Asymmetric relationships: ${Object.keys(flavorMapping).length} flavors`);
+            console.log(`Bidirectional relationships: ${Object.keys(bidirectionalMapping).filter(f => bidirectionalMapping[f].size > 0).length} flavors`);
+            
+            // Debug: Show what blackberries pairs with in both modes
+            if (flavorMapping['blackberries']) {
+                console.log('Blackberries pairs with (asymmetric):', Array.from(flavorMapping['blackberries']).slice(0, 10));
+            }
+            if (bidirectionalMapping['blackberries']) {
+                console.log('Blackberries pairs with (bidirectional):', Array.from(bidirectionalMapping['blackberries']).slice(0, 10));
+            }
+            
+            // Debug: Show what pears pairs with (first 10)
+            if (flavorMapping['pears']) {
+                console.log('Pears pairs with (asymmetric, first 10):', Array.from(flavorMapping['pears']).slice(0, 10));
+            }
+            if (bidirectionalMapping['pears']) {
+                console.log('Pears pairs with (bidirectional, first 10):', Array.from(bidirectionalMapping['pears']).slice(0, 10));
+            }
+        }
+        
+        // Find closest match for input flavor
+        function findClosestFlavor(input) {
+            const inputLower = input.toLowerCase().trim();
+            
+            // Exact match
+            if (allFlavors.has(inputLower)) {
+                return inputLower;
+            }
+            
+            // Partial match
+            for (const flavor of allFlavors) {
+                if (flavor.includes(inputLower) || inputLower.includes(flavor)) {
+                    return flavor;
+                }
+            }
+            
+            return null;
+        }
+        
+        // Check if all flavors in a combination are mutually compatible
+        function areAllCompatible(combination) {
+            console.log(`Checking compatibility for: ${combination.join(' • ')}`);
+            
+            for (let i = 0; i < combination.length; i++) {
+                for (let j = i + 1; j < combination.length; j++) {
+                    const flavor1 = combination[i];
+                    const flavor2 = combination[j];
+                    
+                    // Check if flavor1 pairs with flavor2 AND flavor2 pairs with flavor1
+                    const flavor1Compatible = flavorMapping[flavor1] && flavorMapping[flavor1].has(flavor2);
+                    const flavor2Compatible = flavorMapping[flavor2] && flavorMapping[flavor2].has(flavor1);
+                    
+                    console.log(`  ${flavor1} <-> ${flavor2}: ${flavor1Compatible ? 'Y' : 'N'}/${flavor2Compatible ? 'Y' : 'N'}`);
+                    
+                    if (!flavor1Compatible || !flavor2Compatible) {
+                        console.log(`  ❌ INCOMPATIBLE: ${flavor1} <-> ${flavor2}`);
+                        return false;
+                    }
+                }
+            }
+            console.log(`  ✅ All pairs compatible`);
+            return true;
+        }
+        
+        // Calculate C(n,k) = n!/(k!(n-k)!) without actually generating combinations
+        function calculateCombinations(n, k) {
+            if (k > n) return 0;
+            if (k === 0 || k === n) return 1;
+            
+            // Use the more efficient formula: C(n,k) = n×(n-1)×...×(n-k+1) / k!
+            let result = 1;
+            for (let i = 0; i < k; i++) {
+                result = result * (n - i) / (i + 1);
+            }
+            return Math.round(result);
+        }
+        
+        // Generate all combinations of a given size
+        function generateCombinations(arr, size) {
+            if (size === 0) return [[]];
+            if (size === 1) {
+                return arr.map(item => [item]);
+            }
+            if (arr.length < size) {
+                return [];
+            }
+            
+            const combinations = [];
+            for (let i = 0; i <= arr.length - size; i++) {
+                const smaller = generateCombinations(arr.slice(i + 1), size - 1);
+                for (const combo of smaller) {
+                    combinations.push([arr[i], ...combo]);
+                }
+            }
+            return combinations;
+        }
+        
+        // Find compatible combinations for multiple base flavors
+        function findCompatibleCombinations(baseFlavors, minSize, maxSize, maxResults, bidirectional = true) {
+            try {
+                if (baseFlavors.length === 0) {
+                    return { error: 'No base flavors provided.' };
+                }
+                
+                console.log(`Finding combinations for base flavors: ${baseFlavors.join(', ')}`);
+                console.log(`Using ${bidirectional ? 'bidirectional' : 'asymmetric'} compatibility mode`);
+                console.log(`Looking for combinations from size ${minSize} to ${maxSize}`);
+                
+                // Choose the appropriate mapping based on mode
+                const activeMapping = bidirectional ? bidirectionalMapping : flavorMapping;
+                
+                // Find flavors that are compatible with ALL base flavors
+                let commonCompatibleFlavors = null;
+                
+                for (const baseFlavor of baseFlavors) {
+                    if (!activeMapping[baseFlavor] || activeMapping[baseFlavor].size === 0) {
+                        return { error: `No ${bidirectional ? 'bidirectional' : ''} pairings found for "${baseFlavor}".` };
+                    }
+                    
+                    const compatibleFlavors = Array.from(activeMapping[baseFlavor]);
+                    
+                    if (commonCompatibleFlavors === null) {
+                        commonCompatibleFlavors = new Set(compatibleFlavors);
+                    } else {
+                        // Keep only flavors that are compatible with this base flavor too
+                        commonCompatibleFlavors = new Set(
+                            [...commonCompatibleFlavors].filter(flavor => compatibleFlavors.includes(flavor))
+                        );
+                    }
+                }
+                
+                // Remove the base flavors themselves from the compatible list
+                baseFlavors.forEach(baseFlavor => commonCompatibleFlavors.delete(baseFlavor));
+                
+                const compatibleFlavorsArray = Array.from(commonCompatibleFlavors);
+                console.log(`Found ${compatibleFlavorsArray.length} flavors compatible with ALL base flavors`);
+                
+                // Check if we have enough flavors for the minimum size
+                const neededCompanions = minSize - baseFlavors.length;
+                if (compatibleFlavorsArray.length < neededCompanions) {
+                    return { 
+                        error: `Not enough compatible flavors. Found ${compatibleFlavorsArray.length} flavors compatible with all base flavors, but need at least ${neededCompanions} more to form combinations of size ${minSize}.` 
+                    };
+                }
+                
+                const results = [];
+                let combinationsChecked = 0;
+                let totalCombinationsGenerated = 0;
+                
+                // Generate combinations of different sizes
+                for (let size = minSize; size <= maxSize; size++) {
+                    const neededCompanions = size - baseFlavors.length;
+                    
+                    if (compatibleFlavorsArray.length < neededCompanions) {
+                        console.log(`Skipping size ${size} - need ${neededCompanions} companions but only have ${compatibleFlavorsArray.length}`);
+                        continue;
+                    }
+                    
+                    // Calculate how many combinations this would generate
+                    const estimatedCombinations = calculateCombinations(compatibleFlavorsArray.length, neededCompanions);
+                    console.log(`Would generate approximately ${estimatedCombinations} combinations of ${neededCompanions} from ${compatibleFlavorsArray.length} flavors for size ${size}`);
+                    
+                    // Skip if too many combinations (would cause browser freeze)
+                    if (estimatedCombinations > 100000) {
+                        console.log(`Skipping size ${size} - too many combinations (${estimatedCombinations}), would freeze browser`);
+                        continue;
+                    }
+                    
+                    console.log(`Generating combinations of ${neededCompanions} from ${compatibleFlavorsArray.length} flavors for size ${size}`);
+                    
+                    const combinations = generateCombinations(compatibleFlavorsArray, neededCompanions);
+                    totalCombinationsGenerated += combinations.length;
+                    console.log(`Generated ${combinations.length} combinations for size ${size}`);
+                    
+                    for (const combo of combinations) {
+                        combinationsChecked++;
+                        const fullCombo = [...baseFlavors, ...combo];
+                        
+                        if (combinationsChecked % 1000 === 0) {
+                            console.log(`Checked ${combinationsChecked} combinations so far, found ${results.length} valid ones`);
+                        }
+                        
+                        if (areAllCompatible(fullCombo)) {
+                            results.push({
+                                combination: fullCombo,
+                                size: fullCombo.length
+                            });
+                            
+                            if (results.length >= maxResults) {
+                                console.log(`Reached max results limit of ${maxResults}`);
+                                return { 
+                                    results, 
+                                    baseFlavors: baseFlavors,
+                                    truncated: true,
+                                    combinationsChecked,
+                                    totalCombinationsGenerated
+                                };
+                            }
+                        }
+                    }
+                }
+                
+                console.log(`Finished: Generated ${totalCombinationsGenerated} total combinations, checked ${combinationsChecked}, found ${results.length} valid ones`);
+                
+                // Sort by combination size (smaller first for readability)
+                results.sort((a, b) => a.size - b.size);
+                
+                // If no results found but we skipped large sizes, inform user
+                if (results.length === 0 && totalCombinationsGenerated === 0) {
+                    return {
+                        error: `Combination sizes ${minSize}-${maxSize} would generate too many possibilities to check efficiently. Try smaller combination sizes (2-4 ingredients work best) or add more base flavors to narrow the search space.`
+                    };
+                }
+                
+                return { 
+                    results, 
+                    baseFlavors: baseFlavors,
+                    truncated: false,
+                    combinationsChecked,
+                    totalCombinationsGenerated
+                };
+            } catch (error) {
+                console.error('Error in findCompatibleCombinations:', error);
+                return { error: `Search failed: ${error.message}` };
+            }
+        }
+        
+        // Display results
+        function displayResults(data) {
+            const resultsElement = document.getElementById('combinationResults');
+            
+            if (data.error) {
+                resultsElement.innerHTML = `<div class="error">${data.error}</div>`;
+                return;
+            }
+            
+            if (data.results.length === 0) {
+                let message = data.baseFlavors 
+                    ? `No compatible combinations found for base flavors: ${data.baseFlavors.join(', ')}.`
+                    : `No compatible combinations found for "${data.baseFlavor}".`;
+                if (data.combinationsChecked) {
+                    message += ` Checked ${data.combinationsChecked} possible combinations.`;
+                }
+                resultsElement.innerHTML = `<div class="loading">${message}</div>`;
+                return;
+            }
+            
+            let baseFlavorsText = data.baseFlavors 
+                ? data.baseFlavors.join(', ')
+                : data.baseFlavor;
+            let html = `<p><strong>Found ${data.results.length} compatible combination${data.results.length === 1 ? '' : 's'} for base flavors: ${baseFlavorsText}</strong></p>`;
+            
+            if (data.combinationsChecked) {
+                html += `<p><em>Checked ${data.combinationsChecked} possible combinations.</em></p>`;
+            }
+            
+            if (data.truncated) {
+                html += `<p><em>Results limited to first ${data.results.length} combinations.</em></p>`;
+            }
+            
+            data.results.forEach((result, index) => {
+                html += `<div class="combination">
+                    <div class="combination-size">${result.size}-ingredient combination #${index + 1}</div>
+                    <div class="combination-header">${result.combination.join(' • ')}</div>
+                </div>`;
+            });
+            
+            resultsElement.innerHTML = html;
+        }
+        
+        // Autocomplete functionality
+        function filterSuggestions(input) {
+            if (!input.trim()) return [];
+            
+            const inputLower = input.toLowerCase();
+            const matches = [];
+            
+            // Find exact matches first
+            const exactMatches = sortedFlavors.filter(flavor => 
+                flavor.toLowerCase().startsWith(inputLower)
+            );
+            
+            // Find partial matches
+            const partialMatches = sortedFlavors.filter(flavor => 
+                !flavor.toLowerCase().startsWith(inputLower) && 
+                flavor.toLowerCase().includes(inputLower)
+            );
+            
+            // Combine and limit results
+            return [...exactMatches, ...partialMatches].slice(0, 8);
+        }
+        
+        function showSuggestions(suggestions) {
+            if (suggestions.length === 0) {
+                suggestionsContainer.style.display = 'none';
+                return;
+            }
+            
+            suggestionsContainer.innerHTML = '';
+            suggestions.forEach(suggestion => {
+                const item = document.createElement('div');
+                item.className = 'suggestion-item';
+                item.textContent = suggestion;
+                item.addEventListener('click', () => {
+                    addIngredient(suggestion);
+                    document.getElementById('baseFlavorInput').value = '';
+                    suggestionsContainer.style.display = 'none';
+                });
+                suggestionsContainer.appendChild(item);
+            });
+            
+            suggestionsContainer.style.display = 'block';
+        }
+        
+        // Add an ingredient to the selected list
+        function addIngredient(ingredient) {
+            if (!ingredient) return;
+            
+            const matchedFlavor = findClosestFlavor(ingredient);
+            if (!matchedFlavor) {
+                alert(`Flavor "${ingredient}" not found in database.`);
+                return;
+            }
+            
+            if (selectedIngredients.includes(matchedFlavor)) {
+                return; // Already selected
+            }
+            
+            selectedIngredients.push(matchedFlavor);
+            renderSelectedIngredients();
+        }
+        
+        // Remove an ingredient from the selected list
+        function removeIngredient(ingredient) {
+            selectedIngredients = selectedIngredients.filter(item => item !== ingredient);
+            renderSelectedIngredients();
+        }
+        
+        // Render the selected ingredients as tags
+        function renderSelectedIngredients() {
+            if (selectedIngredients.length === 0) {
+                selectedIngredientsContainer.innerHTML = '<em style="color: #7f8c8d;">No base flavors selected. Add flavors above.</em>';
+                return;
+            }
+            
+            selectedIngredientsContainer.innerHTML = '';
+            selectedIngredients.forEach(ingredient => {
+                const tag = document.createElement('div');
+                tag.className = 'tag';
+                tag.innerHTML = `${ingredient} <span>&times;</span>`;
+                
+                tag.querySelector('span').addEventListener('click', () => {
+                    removeIngredient(ingredient);
+                });
+                
+                selectedIngredientsContainer.appendChild(tag);
+            });
+        }
+        
+        // Set base flavor from suggestion buttons
+        function setBaseFlavor(flavor) {
+            addIngredient(flavor);
+            document.getElementById('baseFlavorInput').value = '';
+            suggestionsContainer.style.display = 'none';
+        }
+        
+        // Main search function
+        function performSearch() {
+            const minSize = parseInt(document.getElementById('minCombinationSize').value);
+            const maxSize = parseInt(document.getElementById('maxCombinationSize').value);
+            const maxResults = parseInt(document.getElementById('resultLimit').value);
+            const bidirectional = document.getElementById('bidirectionalMode').checked;
+            
+            if (selectedIngredients.length === 0) {
+                document.getElementById('combinationResults').innerHTML = 
+                    '<div class="error">Please add at least one base flavor.</div>';
+                return;
+            }
+            
+            if (minSize > maxSize) {
+                document.getElementById('combinationResults').innerHTML = 
+                    '<div class="error">Minimum size cannot be greater than maximum size.</div>';
+                return;
+            }
+            
+            document.getElementById('combinationResults').innerHTML = 
+                '<div class="loading">Searching for compatible combinations...</div>';
+            
+            // Use setTimeout to allow UI to update
+            setTimeout(() => {
+                const results = findCompatibleCombinations(selectedIngredients, minSize, maxSize, maxResults, bidirectional);
+                displayResults(results);
+            }, 50);
+        }
+        
+        // Initialize the app (called after password verification)
+        function initApp() {
+            loadData();
+            setupEventListeners();
+        }
+
+        // Set up event listeners
+        function setupEventListeners() {
+            
+            const baseFlavorInput = document.getElementById('baseFlavorInput');
+            
+            document.getElementById('findCombinations').addEventListener('click', performSearch);
+            
+            // Add ingredient button
+            document.getElementById('addIngredientButton').addEventListener('click', () => {
+                const flavor = baseFlavorInput.value.trim();
+                if (flavor) {
+                    addIngredient(flavor);
+                    baseFlavorInput.value = '';
+                    suggestionsContainer.style.display = 'none';
+                }
+            });
+            
+            // Input event for autocomplete
+            baseFlavorInput.addEventListener('input', () => {
+                const suggestions = filterSuggestions(baseFlavorInput.value);
+                showSuggestions(suggestions);
+            });
+            
+            // Enter key to add ingredient
+            baseFlavorInput.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') {
+                    const flavor = baseFlavorInput.value.trim();
+                    if (flavor) {
+                        addIngredient(flavor);
+                        baseFlavorInput.value = '';
+                    }
+                    suggestionsContainer.style.display = 'none';
+                }
+            });
+            
+            
+            // Hide suggestions when clicking outside
+            document.addEventListener('click', (e) => {
+                if (!baseFlavorInput.contains(e.target) && !suggestionsContainer.contains(e.target)) {
+                    suggestionsContainer.style.display = 'none';
+                }
+            });
+            
+            // Hide suggestions when input loses focus (with small delay for click events)
+            baseFlavorInput.addEventListener('blur', () => {
+                setTimeout(() => {
+                    suggestionsContainer.style.display = 'none';
+                }, 150);
+            });
+        }
+
+        // Start password protection on page load
+        document.addEventListener('DOMContentLoaded', initPasswordProtection);
+    </script>
+</body>
+</html>

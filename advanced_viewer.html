@@ -1,0 +1,815 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Flavor Finder - Advanced Viewer</title>
+    <style>
+        :root {
+            --primary-color: #3498db;
+            --primary-dark: #2980b9;
+            --secondary-color: #e74c3c;
+            --text-color: #333;
+            --light-gray: #f5f5f5;
+            --border-color: #ddd;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            color: var(--text-color);
+            background-color: white;
+        }
+        
+        h1, h2 {
+            color: var(--primary-dark);
+        }
+        
+        h1 {
+            text-align: center;
+            margin-bottom: 30px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid var(--primary-color);
+        }
+        
+        .container {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+        
+        .search-container {
+            background-color: var(--light-gray);
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        .search-box {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+        
+        input[type="text"] {
+            flex: 1;
+            padding: 10px 15px;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            font-size: 16px;
+        }
+        
+        button {
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: background-color 0.2s;
+        }
+        
+        button:hover {
+            background-color: var(--primary-dark);
+        }
+        
+        .tags-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-bottom: 15px;
+        }
+        
+        .tag {
+            background-color: var(--primary-color);
+            color: white;
+            padding: 5px 10px;
+            border-radius: 20px;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        
+        .tag span {
+            cursor: pointer;
+            font-weight: bold;
+        }
+
+        .highlight-tag {
+            animation: pulse 1s;
+            background-color: var(--secondary-color);
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+            100% { transform: scale(1); }
+        }
+        
+        .suggestions {
+            background-color: white;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            max-height: 200px;
+            overflow-y: auto;
+            position: absolute;
+            width: calc(100% - 30px);
+            z-index: 10;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+        
+        .suggestion-item {
+            padding: 8px 15px;
+            cursor: pointer;
+        }
+        
+        .suggestion-item:hover {
+            background-color: var(--light-gray);
+        }
+        
+        .results {
+            border: 1px solid var(--border-color);
+            padding: 20px;
+            border-radius: 8px;
+            min-height: 300px;
+            background-color: white;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        .result-list {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 10px;
+        }
+        
+        .result-item {
+            background-color: var(--light-gray);
+            padding: 10px 15px;
+            border-radius: 4px;
+            transition: all 0.2s;
+            cursor: pointer;
+            border: 1px solid transparent;
+            position: relative;
+        }
+
+        .result-item:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            border-color: var(--primary-color);
+            background-color: #edf7fd;
+        }
+
+        .result-item::after {
+            content: "+";
+            position: absolute;
+            top: 5px;
+            right: 8px;
+            font-size: 12px;
+            color: var(--primary-color);
+            opacity: 0;
+            transition: opacity 0.2s;
+        }
+
+        .result-item:hover::after {
+            opacity: 1;
+        }
+        
+        .loading {
+            text-align: center;
+            font-style: italic;
+            color: #7f8c8d;
+            padding: 20px;
+        }
+        
+        .no-results {
+            text-align: center;
+            color: var(--secondary-color);
+            padding: 20px;
+            font-weight: bold;
+        }
+        
+        .advanced-options {
+            margin-top: 10px;
+        }
+        
+        .checkbox-group {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        
+        .help-text {
+            font-size: 14px;
+            color: #666;
+            margin-top: 5px;
+        }
+        
+        @media (max-width: 768px) {
+            .result-list {
+                grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+            }
+        }
+        .password-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.8);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+        }
+        .password-dialog {
+            background: white;
+            padding: 40px;
+            border-radius: 10px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+            text-align: center;
+            max-width: 400px;
+            width: 90%;
+        }
+        .password-dialog h2 {
+            margin-bottom: 20px;
+            color: var(--primary-dark);
+        }
+        .password-dialog input {
+            width: 100%;
+            padding: 12px;
+            margin: 10px 0 20px 0;
+            border: 2px solid var(--border-color);
+            border-radius: 5px;
+            font-size: 16px;
+        }
+        .password-dialog button {
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        .password-dialog button:hover {
+            background-color: var(--primary-dark);
+        }
+        .password-error {
+            color: var(--secondary-color);
+            margin-top: 10px;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+    <!-- Password Protection Overlay -->
+    <div class="password-overlay" id="passwordOverlay">
+        <div class="password-dialog">
+            <h2>Access Required</h2>
+            <p>Please enter the password to access Flavor Finder:</p>
+            <input type="password" id="passwordInput" placeholder="Enter password..." />
+            <br>
+            <button onclick="checkPassword()">Enter</button>
+            <div class="password-error" id="passwordError"></div>
+        </div>
+    </div>
+
+    <h1>Flavor Finder - Advanced Viewer</h1>
+    
+    <div class="container">
+        <div class="search-container">
+            <h2>Search Ingredients</h2>
+            
+            <div class="search-box">
+                <input type="text" id="searchInput" placeholder="Type ingredient name (e.g., Coconut, Guava)" autocomplete="off">
+                <button id="addButton">Add</button>
+            </div>
+            
+            <div class="suggestions" id="suggestions" style="display: none;"></div>
+            
+            <div class="tags-container" id="selectedIngredients"></div>
+            
+            <div class="advanced-options">
+                <div class="checkbox-group">
+                    <input type="checkbox" id="intersectionToggle" checked>
+                    <label for="intersectionToggle">Show only flavors that pair with ALL selected ingredients</label>
+                </div>
+                <p class="help-text">Uncheck to see all flavors that pair with ANY of the selected ingredients</p>
+            </div>
+            
+            <button id="searchButton">Find Complementary Flavors</button>
+        </div>
+        
+        <div class="results">
+            <h2>Complementary Flavors</h2>
+            <div id="resultSummary"></div>
+            <p class="help-text">Click on any result to add it to your search ingredients</p>
+            <div id="pairingResults" class="result-list">
+                <div class="loading">Enter ingredients above and click "Find Complementary Flavors"</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Password Protection (same system as pair finder)
+        const CORRECT_PASSWORD = '122oceanpark'; // Change this to your desired password
+        const COOKIE_NAME = 'flavor_finder_auth';
+        const COOKIE_DAYS = 365;
+
+        // Check if user is already authenticated
+        function checkAuthCookie() {
+            const cookies = document.cookie.split(';');
+            for (let cookie of cookies) {
+                const [name, value] = cookie.trim().split('=');
+                if (name === COOKIE_NAME && value === 'authenticated') {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        // Set authentication cookie
+        function setAuthCookie() {
+            const expiry = new Date();
+            expiry.setTime(expiry.getTime() + (COOKIE_DAYS * 24 * 60 * 60 * 1000));
+            document.cookie = `${COOKIE_NAME}=authenticated; expires=${expiry.toUTCString()}; path=/`;
+        }
+
+        // Check password function
+        function checkPassword() {
+            const input = document.getElementById('passwordInput');
+            const error = document.getElementById('passwordError');
+            
+            if (input.value === CORRECT_PASSWORD) {
+                setAuthCookie();
+                document.getElementById('passwordOverlay').style.display = 'none';
+                error.textContent = '';
+                initApp(); // Start the app
+            } else {
+                error.textContent = 'Incorrect password. Please try again.';
+                input.value = '';
+                input.focus();
+            }
+        }
+
+        // Initialize password protection
+        function initPasswordProtection() {
+            if (checkAuthCookie()) {
+                document.getElementById('passwordOverlay').style.display = 'none';
+                initApp();
+            } else {
+                document.getElementById('passwordOverlay').style.display = 'flex';
+                document.getElementById('passwordInput').focus();
+                
+                // Allow Enter key to submit password
+                document.getElementById('passwordInput').addEventListener('keypress', function(e) {
+                    if (e.key === 'Enter') {
+                        checkPassword();
+                    }
+                });
+            }
+        }
+
+        // Global variables
+        let allFlavors = [];
+        let flavorMapping = {};
+        let selectedIngredients = [];
+        
+        // DOM elements
+        const searchInput = document.getElementById('searchInput');
+        const suggestionsContainer = document.getElementById('suggestions');
+        const selectedIngredientsContainer = document.getElementById('selectedIngredients');
+        const resultSummary = document.getElementById('resultSummary');
+        const resultContainer = document.getElementById('pairingResults');
+        const intersectionToggle = document.getElementById('intersectionToggle');
+        
+        // Load data from CSV
+        async function loadData() {
+            try {
+                resultContainer.innerHTML = '<div class="loading">Loading flavor data...</div>';
+                
+                const response = await fetch('app/flavor-finder/flavor_finder_full.csv');
+                if (!response.ok) {
+                    throw new Error(`Failed to fetch data: ${response.status}`);
+                }
+                
+                const csvText = await response.text();
+                processCSV(csvText);
+                
+                resultContainer.innerHTML = '<div class="loading">Enter ingredients above and click "Find Complementary Flavors"</div>';
+            } catch (error) {
+                console.error('Error loading data:', error);
+                resultContainer.innerHTML = `<div class="no-results">Error loading data: ${error.message}</div>`;
+            }
+        }
+        
+        // Process CSV data
+        function processCSV(csv) {
+            const lines = csv.split('\n');
+
+            // Get main flavor list and also track all pairings
+            const uniqueFlavors = new Set();
+            const allPairings = new Set();
+            const mainIngredients = new Set(); // Track what are true main ingredients
+
+            // Look for patterns that indicate main ingredients
+            let currentMainIngredient = null;
+
+            // Build flavor mapping
+            for (let i = 1; i < lines.length; i++) {
+                if (!lines[i].trim()) continue;
+
+                // Parse CSV line - handle quotes properly
+                const parts = lines[i].match(/(".*?"|[^",\s]+)(?=\s*,|\s*$)/g);
+                if (!parts || parts.length < 2) continue;
+
+                const mainFlavor = parts[0].replace(/"/g, '').trim();
+                const pairing = parts[1].replace(/"/g, '').trim();
+
+                // Check if this is a main ingredient
+                if (pairing.match(/^(Season|Taste|Function|Weight|Volume|Techniques|Flavor Affinities)/)) {
+                    currentMainIngredient = mainFlavor;
+                    mainIngredients.add(mainFlavor);
+                }
+
+                if (mainFlavor && pairing) {
+                    uniqueFlavors.add(mainFlavor);
+                    allPairings.add(pairing); // Add all pairings to track everything
+
+                    if (!flavorMapping[mainFlavor]) {
+                        flavorMapping[mainFlavor] = [];
+                    }
+
+                    flavorMapping[mainFlavor].push(pairing);
+                }
+            }
+
+            // Store all possible flavors (both main and pairings) for autocomplete
+            // Combine main flavors and pairings for a complete list
+            allFlavors = Array.from(new Set([...uniqueFlavors, ...allPairings])).sort();
+
+            // Add special mappings for common search terms
+            // Special case for coconut
+            if (mainIngredients.has('COCONUT AND COCONUT MILK')) {
+                flavorMapping['coconut'] = flavorMapping['COCONUT AND COCONUT MILK'];
+            }
+
+            console.log(`Loaded ${mainIngredients.size} main ingredients out of ${uniqueFlavors.size} flavor entries, and ${allPairings.size} unique pairings`);
+            console.log(`Total unique flavors: ${allFlavors.length}`);
+            console.log('Main ingredients include:', Array.from(mainIngredients).slice(0, 5));
+        }
+        
+        // Filter suggestions based on input
+        function filterSuggestions(input) {
+            if (!input.trim()) return [];
+
+            const inputLower = input.toLowerCase();
+
+            // Special case handling for common ingredients like coconut
+            let specialCaseMatches = [];
+            if (inputLower === 'coconut') {
+                specialCaseMatches = allFlavors.filter(flavor =>
+                    flavor.toLowerCase() === 'coconut and coconut milk'
+                );
+            }
+
+            const matches = allFlavors
+                .filter(flavor => {
+                    const flavorLower = flavor.toLowerCase();
+                    // Improved matching logic to handle common cases
+                    return flavorLower.includes(inputLower) &&
+                           // Filter out partial matches in parentheses
+                           !(flavorLower.includes('(') &&
+                             flavorLower.includes(inputLower) &&
+                             !flavorLower.startsWith(inputLower));
+                })
+                .sort((a, b) => {
+                    // Improved sorting that prioritizes main ingredients
+                    const aLower = a.toLowerCase();
+                    const bLower = b.toLowerCase();
+
+                    // First prioritize exact matches
+                    const aExact = aLower === inputLower;
+                    const bExact = bLower === inputLower;
+
+                    if (aExact && !bExact) return -1;
+                    if (!aExact && bExact) return 1;
+
+                    // Then prioritize starts-with matches
+                    const aStartsWith = aLower.startsWith(inputLower);
+                    const bStartsWith = bLower.startsWith(inputLower);
+
+                    if (aStartsWith && !bStartsWith) return -1;
+                    if (!aStartsWith && bStartsWith) return 1;
+
+                    // Then prioritize all-caps matches (main ingredients)
+                    const aIsMain = a === a.toUpperCase();
+                    const bIsMain = b === b.toUpperCase();
+
+                    if (aIsMain && !bIsMain) return -1;
+                    if (!aIsMain && bIsMain) return 1;
+
+                    // Finally sort alphabetically
+                    return a.localeCompare(b);
+                });
+
+            // Combine special cases with regular matches
+            const combinedMatches = [...specialCaseMatches, ...matches];
+
+            // Remove duplicates and limit results
+            return [...new Set(combinedMatches)].slice(0, 10);
+        }
+        
+        // Display suggestions
+        function showSuggestions(suggestions) {
+            if (suggestions.length === 0) {
+                suggestionsContainer.style.display = 'none';
+                return;
+            }
+            
+            suggestionsContainer.innerHTML = '';
+            suggestions.forEach(suggestion => {
+                const item = document.createElement('div');
+                item.className = 'suggestion-item';
+                item.textContent = suggestion;
+                item.addEventListener('click', () => {
+                    addIngredient(suggestion);
+                    searchInput.value = '';
+                    suggestionsContainer.style.display = 'none';
+                });
+                suggestionsContainer.appendChild(item);
+            });
+            
+            suggestionsContainer.style.display = 'block';
+        }
+        
+        // Helper function to normalize ingredient names
+        function normalizeIngredientName(ingredient) {
+            // Convert input to standard form for lookup
+            const name = ingredient.trim();
+
+            // Handle common variations
+            const normalizations = {
+                'coconut': 'COCONUT AND COCONUT MILK',
+                'lemon': 'LEMONS',
+                'lime': 'LIMES',
+                'orange': 'ORANGES',
+                'apple': 'APPLES',
+                'banana': 'BANANAS',
+                'mango': 'MANGOES',
+            };
+
+            // Check for direct matches in our normalizations dictionary
+            const lowerName = name.toLowerCase();
+            for (const [key, value] of Object.entries(normalizations)) {
+                if (lowerName === key || lowerName === key + 's') {
+                    console.log(`Normalized "${name}" to "${value}"`);
+                    return value;
+                }
+            }
+
+            return name;
+        }
+
+        // Add an ingredient to the selected list
+        function addIngredient(ingredient) {
+            console.log("addIngredient called with:", ingredient);
+
+            if (!ingredient || selectedIngredients.includes(ingredient)) {
+                console.log("Ingredient is empty or already selected");
+                return;
+            }
+
+            // Try to normalize the ingredient name first
+            const normalizedIngredient = normalizeIngredientName(ingredient);
+
+            // For clicked results, we'll check if it exists in the data differently
+            // Some items might be in the pairings but not as main ingredients
+            if (!flavorMapping[normalizedIngredient] && !flavorMapping[ingredient]) {
+                console.log("No direct mapping found for:", ingredient);
+                console.log("Also checked normalized form:", normalizedIngredient);
+
+                // Check if it appears as a pairing in any existing flavors
+                let foundAsPairing = false;
+                for (const key in flavorMapping) {
+                    if (flavorMapping[key].includes(ingredient) ||
+                        flavorMapping[key].includes(normalizedIngredient)) {
+                        foundAsPairing = true;
+                        break;
+                    }
+                }
+
+                if (!foundAsPairing) {
+                    console.log("Ingredient not found in any pairing");
+                    alert(`No data found for "${ingredient}"`);
+                    return;
+                }
+            }
+
+            // Determine which ingredient name to use (original or normalized)
+            const finalIngredient = flavorMapping[normalizedIngredient] ?
+                                   normalizedIngredient : ingredient;
+
+            console.log("Adding ingredient to selected list:", finalIngredient);
+
+            // Add with a visual indication of what was added
+            selectedIngredients.push(finalIngredient);
+            renderSelectedIngredients();
+
+            // Highlight the last added tag briefly
+            setTimeout(() => {
+                const tags = document.querySelectorAll('.tag');
+                if (tags.length > 0) {
+                    const lastTag = tags[tags.length - 1];
+                    lastTag.classList.add('highlight-tag');
+                    setTimeout(() => {
+                        lastTag.classList.remove('highlight-tag');
+                    }, 1000);
+                }
+            }, 0);
+        }
+        
+        // Remove an ingredient from the selected list
+        function removeIngredient(ingredient) {
+            selectedIngredients = selectedIngredients.filter(item => item !== ingredient);
+            renderSelectedIngredients();
+        }
+        
+        // Render the selected ingredients as tags
+        function renderSelectedIngredients() {
+            selectedIngredientsContainer.innerHTML = '';
+            
+            selectedIngredients.forEach(ingredient => {
+                const tag = document.createElement('div');
+                tag.className = 'tag';
+                tag.innerHTML = `${ingredient} <span>&times;</span>`;
+                
+                tag.querySelector('span').addEventListener('click', () => {
+                    removeIngredient(ingredient);
+                });
+                
+                selectedIngredientsContainer.appendChild(tag);
+            });
+        }
+        
+        // Find matching pairings
+        function findMatches() {
+            if (selectedIngredients.length === 0) {
+                resultContainer.innerHTML = '<div class="loading">Please add at least one ingredient</div>';
+                resultSummary.textContent = '';
+                return;
+            }
+            
+            // Get all pairings for each selected flavor
+            const allPairings = selectedIngredients.map(flavor => flavorMapping[flavor] || []);
+            
+            if (allPairings.some(arr => arr.length === 0)) {
+                resultContainer.innerHTML = '<div class="no-results">No pairings found for one or more selected ingredients</div>';
+                resultSummary.textContent = '';
+                return;
+            }
+            
+            // Find pairings based on mode (intersection or union)
+            let resultPairings;
+            const useIntersection = intersectionToggle.checked;
+            
+            if (useIntersection) {
+                // Intersection mode - flavors that pair with ALL selected ingredients
+                if (allPairings.length === 1) {
+                    resultPairings = allPairings[0];
+                } else {
+                    resultPairings = allPairings[0].filter(pairing => 
+                        allPairings.every(flavorPairings => flavorPairings.includes(pairing))
+                    );
+                }
+                
+                resultSummary.textContent = `Showing flavors that pair with ALL ${selectedIngredients.length} selected ingredients (${resultPairings.length} results)`;
+            } else {
+                // Union mode - flavors that pair with ANY selected ingredient
+                const pairingSet = new Set();
+                allPairings.forEach(pairings => {
+                    pairings.forEach(pairing => pairingSet.add(pairing));
+                });
+                resultPairings = Array.from(pairingSet);
+                
+                resultSummary.textContent = `Showing flavors that pair with ANY of the ${selectedIngredients.length} selected ingredients (${resultPairings.length} results)`;
+            }
+            
+            // Display results
+            if (resultPairings.length === 0) {
+                resultContainer.innerHTML = '<div class="no-results">No common pairings found for these ingredients</div>';
+            } else {
+                resultContainer.innerHTML = resultPairings
+                    .sort()
+                    .map(pairing => `<div class="result-item" data-flavor="${pairing}">${pairing}</div>`)
+                    .join('');
+
+                // We're using a document-level click handler instead of individual ones
+                // This avoids adding multiple listeners to the same elements
+            }
+        }
+        
+        // Handle input events
+        function setupEventListeners() {
+            // Search input
+            searchInput.addEventListener('input', () => {
+                const suggestions = filterSuggestions(searchInput.value);
+                showSuggestions(suggestions);
+            });
+            
+            searchInput.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter') {
+                    addIngredient(searchInput.value);
+                    searchInput.value = '';
+                    suggestionsContainer.style.display = 'none';
+                }
+            });
+            
+            // Add button
+            document.getElementById('addButton').addEventListener('click', () => {
+                addIngredient(searchInput.value);
+                searchInput.value = '';
+                suggestionsContainer.style.display = 'none';
+            });
+            
+            // Search button
+            document.getElementById('searchButton').addEventListener('click', findMatches);
+            
+            // Click outside suggestions to close
+            document.addEventListener('click', (e) => {
+                if (!searchInput.contains(e.target) && !suggestionsContainer.contains(e.target)) {
+                    suggestionsContainer.style.display = 'none';
+                }
+            });
+            
+            // Toggle results mode
+            intersectionToggle.addEventListener('change', () => {
+                if (selectedIngredients.length > 0) {
+                    findMatches();
+                }
+            });
+        }
+        
+        // Add a visual feedback toast when clicking on a result
+        function showToast(message) {
+            // Create toast element if it doesn't exist
+            let toast = document.getElementById('feedback-toast');
+            if (!toast) {
+                toast = document.createElement('div');
+                toast.id = 'feedback-toast';
+                toast.style.cssText = `
+                    position: fixed;
+                    bottom: 20px;
+                    right: 20px;
+                    background-color: var(--primary-color);
+                    color: white;
+                    padding: 10px 20px;
+                    border-radius: 4px;
+                    box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+                    z-index: 1000;
+                    opacity: 0;
+                    transition: opacity 0.3s;
+                `;
+                document.body.appendChild(toast);
+            }
+
+            // Set message and show
+            toast.textContent = message;
+            toast.style.opacity = 1;
+
+            // Hide after a delay
+            setTimeout(() => {
+                toast.style.opacity = 0;
+            }, 2000);
+        }
+
+        // Initialize the app (called after password verification)
+        function initApp() {
+            console.log('App initializing...');
+            loadData();
+            setupEventListeners();
+
+            // Add a click handler to the document to test any issues with event handling
+            document.body.addEventListener('click', (e) => {
+                const target = e.target;
+                if (target.classList.contains('result-item')) {
+                    const flavor = target.getAttribute('data-flavor');
+                    console.log("Document-level click detected on:", flavor);
+
+                    if (flavor && !selectedIngredients.includes(flavor)) {
+                        showToast(`Added "${flavor}" to your ingredients`);
+                        addIngredient(flavor);
+                        findMatches();
+                    }
+                }
+            });
+        }
+
+        // Start password protection on page load
+        document.addEventListener('DOMContentLoaded', initPasswordProtection);
+    </script>
+</body>
+</html>
