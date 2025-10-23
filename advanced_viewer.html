@@ -578,24 +578,33 @@
         function addIngredient(ingredient) {
             console.log("addIngredient called with:", ingredient);
 
-            if (!ingredient || selectedIngredients.includes(ingredient)) {
-                console.log("Ingredient is empty or already selected");
+            if (!ingredient) {
+                console.log("Ingredient is empty");
+                return;
+            }
+
+            // Convert to uppercase for consistent matching (since our data is stored in uppercase)
+            const uppercaseIngredient = ingredient.toUpperCase().trim();
+            
+            // Check if already selected
+            if (selectedIngredients.includes(uppercaseIngredient)) {
+                console.log("Ingredient already selected");
                 return;
             }
 
             // Try to normalize the ingredient name first
-            const normalizedIngredient = normalizeIngredientName(ingredient);
+            const normalizedIngredient = normalizeIngredientName(uppercaseIngredient);
 
             // For clicked results, we'll check if it exists in the data differently
             // Some items might be in the pairings but not as main ingredients
-            if (!flavorMapping[normalizedIngredient] && !flavorMapping[ingredient]) {
-                console.log("No direct mapping found for:", ingredient);
+            if (!flavorMapping[normalizedIngredient] && !flavorMapping[uppercaseIngredient]) {
+                console.log("No direct mapping found for:", uppercaseIngredient);
                 console.log("Also checked normalized form:", normalizedIngredient);
 
                 // Check if it appears as a pairing in any existing flavors
                 let foundAsPairing = false;
                 for (const key in flavorMapping) {
-                    if (flavorMapping[key].includes(ingredient) ||
+                    if (flavorMapping[key].includes(uppercaseIngredient) ||
                         flavorMapping[key].includes(normalizedIngredient)) {
                         foundAsPairing = true;
                         break;
@@ -609,9 +618,9 @@
                 }
             }
 
-            // Determine which ingredient name to use (original or normalized)
+            // Determine which ingredient name to use (prefer normalized, then uppercase)
             const finalIngredient = flavorMapping[normalizedIngredient] ?
-                                   normalizedIngredient : ingredient;
+                                   normalizedIngredient : uppercaseIngredient;
 
             console.log("Adding ingredient to selected list:", finalIngredient);
 
